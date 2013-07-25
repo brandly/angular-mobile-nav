@@ -2,10 +2,10 @@ angular.module('ajoslin.mobile-navigate')
 .directive('mobileView', ['$rootScope', '$compile', '$controller', '$route', '$change', '$q',
 function($rootScope, $compile, $controller, $route, $change, $q) {
 
-  function link(scope, viewElement, attrs) {    
+  function link(scope, viewElement, attrs) {
     //Insert page into dom
     function insertPage(page) {
-      var current = $route.current, 
+      var current = $route.current,
       locals = current && current.locals;
 
       page.element = angular.element(document.createElement("div"));
@@ -27,64 +27,66 @@ function($rootScope, $compile, $controller, $route, $change, $q) {
       return page;
     }
 
+    var transitionListener = scope.$on('$pageTransitionStart', function ($event, dest, source, reverse) {
+      var current = $route.current ? $route.current.$$route : {};
+      var transition = reverse ? source.transition() : dest.transition();
 
-    var currentTrans;
-    scope.$on('$pageTransitionStart', function ($event, dest, source, reverse) {
-      function changePage() {
-        var current = $route.current && $route.current.$$route || {};
-        var transition = reverse ? source.transition() : dest.transition();
-
-        insertPage(dest);
-
-        //If the page is marked as reverse, reverse the direction
-        if (dest.reverse() || current.reverse) {
-          reverse = !reverse;
+      if (source && source.element) {
+        var siblings = source.element.parent().children();
+        for (var index = 0; index < siblings.length; index++) {
+          if (source.element[0] !== siblings[index]) {
+            angular.element(siblings[index]).remove();
+          }
         }
+      }
 
-        function doTransition() {
-          
-          var promise = $change(dest.element, (source ? source.element : null),
-            transition, reverse);
+      insertPage(dest);
 
-          promise.then(function() {
-            if (source) {
-              $rootScope.$broadcast('$pageTransitionSuccess', dest, source);
-              source.scope.$destroy();
-              source.element.remove();
-              source = undefined;
-            }
-          });
+      //If the page is marked as reverse, reverse the direction
+      if (dest.reverse() || current.reverse) {
+        reverse = !reverse;
+      }
 
-          return promise;
-        }
+      function doTransition() {
 
-        //Set next element to display: none, then wait until transition is
-        //ready, then show it again.
-        dest.element.css('display', 'none');
-        
-        //Allow a deferTransition expression, which is allowed to return a promise.
-        //The next page will be inserted, but not transitioned in until the promise
-        //is fulfilled.
-        var deferTransitionPromise = scope.$eval(attrs.deferTransition) || $q.when();
-        deferTransitionPromise.cancel = function() {
-          cancelled = true;  
-          //Undo display none from waiting for transition
-          dest.element.css('display', '');
-        };
+        var promise = $change(dest.element, (source ? source.element : null),
+          transition, reverse);
 
-        var cancelled = false;
-        deferTransitionPromise.then(function() {
-          if (!cancelled) {
-            //Undo display none from waiting for transition
-            dest.element.css('display', '');
-            return doTransition();
+        promise.then(function() {
+          if (source) {
+            $rootScope.$broadcast('$pageTransitionSuccess', dest, source);
+            source.scope.$destroy();
+            source.scope = undefined;
+            source.element.remove();
+            source.element = undefined;
+            source = undefined;
+            promise = null;
           }
         });
 
-        return deferTransitionPromise;
+        return promise;
       }
-      currentTrans && currentTrans.cancel();
-      currentTrans = changePage(dest, source, reverse);
+
+      //Set next element to display: none, then wait until transition is
+      //ready, then show it again.
+      dest.element.css('display', 'none');
+
+      //Allow a deferTransition expression, which is allowed to return a promise.
+      //The next page will be inserted, but not transitioned in until the promise
+      //is fulfilled.
+      var deferTransitionPromise = scope.$eval(attrs.deferTransition) || $q.when();
+
+      deferTransitionPromise.then(function() {
+        //Undo display none from waiting for transition
+        dest.element.css('display', '');
+        deferTransitionPromise = null;
+        return doTransition();
+      });
+    });
+
+    scope.$on('$destroy', function(){
+      transitionListener();
+      element.remove();
     });
   }
   return {

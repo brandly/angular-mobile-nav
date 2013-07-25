@@ -31,15 +31,15 @@ angular.module('ajoslin.mobile-navigate')
         _onceTransition = trans;
       };
     }
-    
+
     function navigate(destination, source, isBack) {
       $rootScope.$broadcast('$pageTransitionStart', destination, source, isBack);
       nav.current = nav.next;
     }
 
-    /* 
+    /*
      * Will listen for a route change success and call the selected callback
-     * Only one listen is ever active, so if you press for example 
+     * Only one listen is ever active, so if you press for example
      * /link1 then press back before /link1 is done, it will go listen for the back
      */
     nav.onRouteSuccess = null;
@@ -72,7 +72,7 @@ angular.module('ajoslin.mobile-navigate')
       $location.path(path);
       //Wait for successful route change before actually doing stuff
       nav.onRouteSuccess = function($event, next, last) {
-        nav.current && navHistory.push(nav.current);
+        nav.current && navHistory.push(nav.current.path());
         nav.next = new Page(path, transition || (next.$$route && next.$$route.transition), isReverse);
         navigate(nav.next, nav.current, false);
       };
@@ -84,10 +84,10 @@ angular.module('ajoslin.mobile-navigate')
     nav.back = function() {
       if (navHistory.length > 0) {
         var previous = navHistory[navHistory.length-1];
-        $location.path(previous.path());
+        $location.path(previous);
         nav.onRouteSuccess = function() {
           navHistory.pop();
-          nav.next = previous;
+          nav.next = new Page(previous);
           navigate(nav.next, nav.current, true);
         };
         return true;

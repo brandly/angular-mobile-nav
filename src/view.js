@@ -35,6 +35,7 @@ function($rootScope, $compile, $controller, $route, $change, $q) {
         var siblings = source.element.parent().children();
         for (var index = 0; index < siblings.length; index++) {
           if (source.element[0] !== siblings[index]) {
+            angular.element(siblings[index]).scope().$destroy();
             angular.element(siblings[index]).remove();
           }
         }

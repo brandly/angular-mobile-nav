@@ -4,7 +4,7 @@
  */
 angular.module('ajoslin.mobile-navigate')
 
-.provider('$change', ['$sniffer', function($sniffer) {
+.provider('$change', function() {
   var transitionPresets = {  //[nextClass, prevClass]
     //Modal: new page pops up, old page sits there until new page is over it
     'modal': ['modal', ''],
@@ -17,9 +17,6 @@ angular.module('ajoslin.mobile-navigate')
   var OUT_CLASS = "out";
   var REVERSE_CLASS = "reverse";
   var DONE_CLASS = "done";
-  var ANIMATION_END = $sniffer.vendorPrefix ?
-    $sniffer.vendorPrefix.toLowerCase() + 'AnimationEnd' :
-    'animationend';
 
   this.setTransitionPreset = function(transitionName, inClass, outClass) {
     inClass = inClass || '';
@@ -30,7 +27,10 @@ angular.module('ajoslin.mobile-navigate')
     defaultOptions = angular.extend(defaultOptions, opts || {});
   };
 
-  this.$get = ['$q', '$rootScope', function($q, $rootScope) {
+  this.$get = ['$q', '$rootScope', '$sniffer', function($q, $rootScope, $sniffer) {
+    var ANIMATION_END = $sniffer.vendorPrefix ?
+      $sniffer.vendorPrefix.toLowerCase() + 'AnimationEnd' :
+      'animationend';
 
     return function change(next, prev, transType, reverse, options) {
       options = angular.extend(options || {}, defaultOptions);
@@ -108,4 +108,4 @@ angular.module('ajoslin.mobile-navigate')
       return deferred.promise;
     };
   }];
-}]);
+});
